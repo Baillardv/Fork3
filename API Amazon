@@ -1,0 +1,37 @@
+import requests
+import hashlib
+import hmac
+import base64
+from urllib.parse import quote
+
+access_key = "VotreAccessKey"
+secret_key = "VotreSecretKey"
+associate_tag = "VotreAssociateTag"
+
+base_url = "https://webservices.amazon.com"
+
+def generate_signature(url, params):
+    sorted_params = sorted(params.items())
+    encoded_params = "&".join([f"{quote(k)}={quote(v)}" for k, v in sorted_params])
+    string_to_sign = "GET\n" + url + "\n" + encoded_params
+    signature = base64.b64encode(hmac.new(secret_key.encode(), string_to_sign.encode(), hashlib.sha256).digest()).decode()
+    return signature
+
+def search_products(keyword):
+    params = {
+        "Service": "AWSECommerceService",
+        "Operation": "ItemSearch",
+        "Keywords": keyword,
+        "ResponseGroup": "ItemAttributes,Offers",
+        "AssociateTag": associate_tag,
+        "AWSAccessKeyId": access_key
+    }
+    url = base_url + "/onca/xml"
+    params["Signature"] = generate_signature(url, params)
+    response = requests.get(url, params=params)
+    return response.content
+
+# Exemple d'appel à l'API pour rechercher des livres
+keyword = "Python programming"
+response = search_products(keyword)
+print(response)  
